@@ -118,7 +118,7 @@ pub trait Copy: Clone { }
 > 解释
 
 看完了这两个trait都表示那些涵义其实答案很清楚了：
-1. Copy代表着浅拷贝，而实现了Copy的类型，一定能够实现clone方法，如果你使用派生的方式为结构体实现Clone trait，则其实本是上Clone == Copy，除非你手动实现Clone，并自定义clone的逻辑。
+1. Copy代表着浅拷贝，而实现了Copy的类型，一定能够实现clone方法，如果你使用派生的方式为结构体实现Clone trait，则其实本质是上`Clone == Copy`，除非你手动实现Clone，并自定义clone的逻辑。
 2. 那么问题就来了，既然类型能够实现Copy，那我不现实Copy，只实现Clone可以么？当然可以，但是此时如果发生了赋值，传参，返回值等情况下，默认就是Move语义了
 
 总之就是一句话，Copy之所以要将Clone设置为super trait，其实就是给程序员一个保证，任何实现了Copy的类型，都会有clone的实现（无论是程序员手动实现还是由编译器派生）
