@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
+    <channel>
+      <title>Yage&#x27;s Blog</title>
+      <link>https://yagegeng.github.io</link>
+      <description>Some of my study notes and reflections.</description>
+      <generator>Zola</generator>
+      <language>en</language>
+      <atom:link href="https://yagegeng.github.io/rss.xml" rel="self" type="application/rss+xml"/>
+      <lastBuildDate>Fri, 21 Jun 2024 00:00:00 +0000</lastBuildDate>
+      <item>
+          <title>Rust所有权机制分析</title>
+          <pubDate>Fri, 21 Jun 2024 00:00:00 +0000</pubDate>
+          <author>Unknown</author>
+          <link>https://yagegeng.github.io/docs/rust-ownership/</link>
+          <guid>https://yagegeng.github.io/docs/rust-ownership/</guid>
+          <description xml:base="https://yagegeng.github.io/docs/rust-ownership/">&lt;p&gt;众所周知，Rust向来以内存安全自称，且无GC。这究竟是怎么做到的？我们来一起一探究竟吧。&lt;&#x2F;p&gt;
+</description>
+      </item>
+      <item>
+          <title>Hello World</title>
+          <pubDate>Thu, 20 Jun 2024 00:00:00 +0000</pubDate>
+          <author>Unknown</author>
+          <link>https://yagegeng.github.io/docs/hello-wrold/</link>
+          <guid>https://yagegeng.github.io/docs/hello-wrold/</guid>
+          <description xml:base="https://yagegeng.github.io/docs/hello-wrold/">&lt;p&gt;Hello Zola, and Deepthought. Test base MarkDown syntax.&lt;&#x2F;p&gt;
+</description>
+      </item>
+    </channel>
+</rss>

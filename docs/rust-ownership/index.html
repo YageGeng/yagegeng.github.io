@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta content="width=device-width, initial-scale=1" name="viewport" />
+  <meta content="#ffffff" name="theme-color" />
+  <meta content="#da532c" name="msapplication-TileColor" />
+
+  
+  <link href='&#x2F;icons&#x2F;site.webmanifest' rel="manifest" />
+  
+  
+  <link color="#5bbad5" href='&#x2F;icons&#x2F;safari-pinned-tab.svg' rel="mask-icon" />
+  
+  
+  <link href='&#x2F;icons&#x2F;favicon-16x16.png' rel="icon" sizes="16x16" type="image/png" />
+  
+  
+  <link href='&#x2F;icons&#x2F;favicon-32x32.png' rel="icon" sizes="32x32" type="image/png" />
+  
+  
+  <link href='&#x2F;icons&#x2F;apple-touch-icon.png' rel="apple-touch-icon" sizes="180x180" />
+  
+
+  
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/galleria@1.6.1/dist/themes/folio/galleria.folio.min.css" integrity="sha384-+rY0QD+LRnTOquDMzGa9lXU6jIwdiQuwCJQ2cdcW0qeP/0UbjQCZlXnRsUMA+9pH" crossorigin="anonymous">
+  
+
+  
+
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/jpswalsh/academicons@1.9.1/css/academicons.min.css" integrity="sha384-FIue+PI4SsI9XfHCz8dBLg33b0c1fMJgNU3X//L26FYbGnlSEfWmNT7zgWc2N9b6" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.2.0/css/all.min.css" integrity="sha256-AbA177XfpSnFEvgpYu1jMygiLabzPCJCRIBtR5jGc0k=" crossorigin="anonymous">
+  <link href="https://yagegeng.github.io/deep-thought.css" rel="stylesheet" />
+  
+  
+
+  <title>
+    
+Yage&#x27;s Blog | Rust所有权机制分析
+
+  </title>
+
+  
+  
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-X5VWGB8YND"></script>
+  <script type="text/javascript">
+    window.dataLayer = window.dataLayer || [];
+    function gtag() {
+      dataLayer.push(arguments);
+    }
+    gtag("js", new Date());
+    gtag("config", "G-X5VWGB8YND");
+  </script>
+  
+  
+
+  
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.15.1/dist/katex.min.css" integrity="sha384-R4558gYOUz8mP9YWpZJjofhk+zx0AS11p36HnD2ZKj/6JR5z27gSSULCNHIRReVs" crossorigin="anonymous">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.15.1/dist/katex.min.js" integrity="sha384-z1fJDqw8ZApjGO3/unPWUPsIymfsJmyrDVWC8Tv/a1HeOtGmkwNd/7xUS0Xcnvsx" crossorigin="anonymous"></script>
+
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.15.1/dist/contrib/mathtex-script-type.min.js" integrity="sha384-jiBVvJ8NGGj5n7kJaiWwWp9AjC+Yh8rhZY3GtAX8yU28azcLgoRo4oukO87g7zDT" crossorigin="anonymous"></script>
+  
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.15.1/dist/contrib/auto-render.min.js" integrity="sha384-+XBljXPPiv+OzfbB3cVmLHf4hdUFHlWNZN5spNQ7rmHTXpd7WvJum6fIACpNNfIR" crossorigin="anonymous"></script>
+  
+  
+</head>
+
+<body class="has-background-white">
+  <nav aria-label="section navigation" class="navbar is-light" role="navigation">
+    <div class="container">
+      <div class="navbar-brand">
+        <a class="navbar-item is-size-5 has-text-weight-bold" href="https:&#x2F;&#x2F;yagegeng.github.io">Yage&#x27;s Blog</a>
+        <a aria-expanded="false" aria-label="menu" class="navbar-burger burger" data-target="navMenu" role="button">
+          <span aria-hidden="true"></span>
+          <span aria-hidden="true"></span>
+          <span aria-hidden="true"></span>
+        </a>
+      </div>
+      <div class="navbar-menu" id="navMenu">
+        <div class="navbar-end has-text-centered">
+          
+          
+          
+          <a class="navbar-item has-text-weight-semibold" href="https:&#x2F;&#x2F;yagegeng.github.io&#x2F;docs">
+            Docs
+          </a>
+          
+          <a class="navbar-item has-text-weight-semibold" href="https:&#x2F;&#x2F;yagegeng.github.io&#x2F;tags">
+            Tags
+          </a>
+          
+          <a class="navbar-item has-text-weight-semibold" href="https:&#x2F;&#x2F;yagegeng.github.io&#x2F;categories">
+            Categories
+          </a>
+          
+          
+          
+          <a class="navbar-item" id="nav-search" title="Search" data-target="#search-modal">
+            <span class="icon">
+              <i class="fas fa-search"></i>
+            </span>
+          </a>
+          <a class="navbar-item" id="dark-mode" title="Switch to dark theme">
+            <span class="icon">
+              <i class="fas fa-adjust"></i>
+            </span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  
+  
+
+  
+<section class="section">
+  <div class="container">
+    <div class="columns">
+      <div class="column is-8 is-offset-2">
+        <article class="box">
+          <h1 class="title">
+            Rust所有权机制分析
+          </h1>
+          <p class="subtitle">本文将从内存管理出发，去审视Rust的所有权机制及借用规则</p>
+          <div class="columns is-multiline is-gapless">
+            <div class="column is-8">
+              
+<span class="icon-text has-text-grey">
+  <span class="icon">
+    <i class="fas fa-user"></i>
+  </span>
+  <span>Yage published on</span>
+  <span class="icon">
+    <i class="far fa-calendar-alt"></i>
+  </span>
+  <span><time datetime="2024-06-21">June 21, 2024</time></span>
+</span>
+
+            </div>
+            <div class="column is-4 has-text-right-desktop">
+              
+<span class="icon-text has-text-grey">
+  <span class="icon">
+    <i class="far fa-clock"></i>
+  </span>
+  <span>12 min,</span>
+  <span class="icon">
+    <i class="fas fa-pencil-alt"></i>
+  </span>
+  <span>2361 words</span>
+</span>
+
+            </div>
+            <div class="column">
+              
+              
+<p>
+  Categories:
+  
+  <a class="has-text-info-dark has-text-weight-semibold" href="https://yagegeng.github.io/categories/rust/">
+    <span class="icon-text">
+      <span class="icon">
+        <i class="fas fa-cube"></i>
+      </span>
+      <span>rust</span>
+    </span>
+  </a>
+  
+</p>
+
+              
+            </div>
+            <div class="column has-text-right-desktop">
+              
+              
+<p>
+  Tags:
+  
+  <a class="has-text-info-dark has-text-weight-semibold" href="https://yagegeng.github.io/tags/rust/">
+    <span class="icon-text">
+      <span class="icon">
+        <i class="fas fa-tag"></i>
+      </span>
+      <span>rust</span>
+    </span>
+  </a>
+  
+  <a class="has-text-info-dark has-text-weight-semibold" href="https://yagegeng.github.io/tags/suo-you-quan/">
+    <span class="icon-text">
+      <span class="icon">
+        <i class="fas fa-tag"></i>
+      </span>
+      <span>所有权</span>
+    </span>
+  </a>
+  
+  <a class="has-text-info-dark has-text-weight-semibold" href="https://yagegeng.github.io/tags/jie-yong-gui-ze/">
+    <span class="icon-text">
+      <span class="icon">
+        <i class="fas fa-tag"></i>
+      </span>
+      <span>借用规则</span>
+    </span>
+  </a>
+  
+</p>
+
+              
+            </div>
+          </div>
+          <div class="content mt-2">
+            <p>众所周知，Rust向来以内存安全自称，且无GC。这究竟是怎么做到的？我们来一起一探究竟吧。</p>
+<span id="continue-reading"></span><h1 id="nei-cun-guan-li-de-jing-dian-fang-shi">内存管理的经典方式</h1>
+<h2 id="chang-jian-de-nei-cun-guan-li-fang-shi">常见的内存管理方式</h2>
+<ol>
+<li>手动管理。</li>
+</ol>
+<blockquote>
+<p>例如C语言，程序员需要显式地分配和释放内存。优点是高效且控制精细，高度灵活可自定义。但是程序员必须时刻记住内存何时需要回收，这会给程序员带来极大的心智负担。</p>
+</blockquote>
+<ol start="2">
+<li>自动管理</li>
+</ol>
+<blockquote>
+<p>通过GC实现。例如Java，Go等语言。优点是减少悬空指针，双重释放错误，内存泄漏的风险。而代价是在运行期的性能开销，甚至是偶发的不可接受的暂停时间（Stop The World）</p>
+</blockquote>
+<ol start="3">
+<li>引用技术</li>
+</ol>
+<blockquote>
+<p>例如Objective-C，Python等语言，每个对象都有一个引用计数，当引用计数变为零时，释放该对象的内存。优点是简单直接，缺点是处理循环引用困难。</p>
+</blockquote>
+<h2 id="rustde-nei-cun-guan-li-fang-shi">Rust的内存管理方式</h2>
+<p>Ok，介绍了一些常见编程语言的内存管理方式，并且简要的分析了其优缺点。接下来我们看一下Rust是如何实现内存管理的。</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#6c7079;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#cd74e8;">fn </span><span style="color:#5cb3fa;">main</span><span style="color:#abb2bf;">() {
+</span><span style="color:#abb2bf;">    </span><span style="color:#cd74e8;">let</span><span style="color:#abb2bf;"> s1 </span><span style="color:#adb7c9;">= </span><span style="color:#abb2bf;">String::from(</span><span style="color:#9acc76;">&quot;hello world&quot;</span><span style="color:#abb2bf;">);
+</span><span style="color:#abb2bf;">    println!(</span><span style="color:#9acc76;">&quot;</span><span style="color:#db9d63;">{}</span><span style="color:#9acc76;">&quot;</span><span style="color:#abb2bf;">, s1);
+</span><span style="color:#abb2bf;">    </span><span style="color:#cd74e8;">let</span><span style="color:#abb2bf;"> s2 </span><span style="color:#adb7c9;">=</span><span style="color:#abb2bf;"> s1;
+</span><span style="color:#abb2bf;">    println!(</span><span style="color:#9acc76;">&quot;</span><span style="color:#db9d63;">{}</span><span style="color:#9acc76;">&quot;</span><span style="color:#abb2bf;">, s2);
+</span><span style="color:#abb2bf;">    </span><span style="font-style:italic;color:#5f697a;">// println!(&quot;{}&quot;, str); // error[E0382]: use of moved value: `s1`
+</span><span style="color:#abb2bf;">}
+</span></code></pre>
+<p>上述代码是rust用来展示所有权机制的一个经典代码，不过也可以用来展示其内存管理机制是如何运行的。</p>
+<p>当变量s1创建之后，我们来看一下此时程序的堆栈情况:</p>
+<p><img src="https://yagegeng.github.io/docs/rust-ownership/s1.png" alt="s1_stack_heap" /></p>
+<p>变量s1是一个胖指针，包含（<code>ptr只想堆内存的指针</code>，<code>cap可用堆字节数</code>，<code>len已经使用的字节数</code>）用来管理其分配在堆上的内存<code>hello world</code>
+<code>hello world</code>一共占用11个字节，在笔者的电脑上，此时cap和len均为11。</p>
+<p>到此，rust看起来和其他语言没有任何区别。我们接着看<code>let s2 = s1</code></p>
+<p><img src="https://yagegeng.github.io/docs/rust-ownership/s1_s2.png" alt="s1_s2_stack_heap" /></p>
+<p>这看起来也挺正常的，类似于发生了一次浅拷贝。但是在Rust中，这种行为被称之为移动，也就是我们常说的Move语义。他不仅仅按位拷贝了一份栈上的数据，还会令旧数据（指s1这个旁指针本身，而非堆中的<code>hello world</code>）立即失效<sup class="footnote-reference"><a href="#1">1</a></sup>，我们可以看到上述代码只有注释掉了第二次打印<code>s1</code>才能编译通过，否则报错<code>use of moved value</code>。</p>
+<p>总结一下，Rust的所有权规则会在变量被移动时，将旧的变量标记失效，不允许你再次访问，同时按位拷贝旧变量。抽象一下说就是，Rust不允许<code>别名</code><sup class="footnote-reference"><a href="#2">2</a></sup>的存在。</p>
+<p>换句话说就是，在Safe Rust中，给你做出了一个保证，任何一个值，在任何时候都只会有一个所有者。</p>
+<p>当所有者离开作用域时，值被丢弃。</p>
+<h1 id="suo-you-quan-gui-ze">所有权规则</h1>
+<blockquote>
+<ol>
+<li>Rust 中的每一个值都有一个被称为其 所有者（owner）的变量。</li>
+<li>值在任一时刻有且只有一个所有者。</li>
+<li>当所有者（变量）离开作用域，这个值将被丢弃。</li>
+</ol>
+</blockquote>
+<p>上述规则摘抄自《The book》中文版。</p>
+<p>只有从内存管理的角度理解透彻了之后，才能明白这三条规则都在反反复复的诉说同一件事————只有所有者才有权决定何时释放内存。</p>
+<h1 id="move-he-copy-yu-yi">Move 和 Copy 语义</h1>
+<p>Move语义是Rust默认的规则，当赋值，传参，返回值产生时默认是Move语义，转移所有权。当然也有例外即，任何实现了<code>Copy</code> trait的结构体，默认执行Copy语义。Move语义我们在上述分析中已经阐明。而Copy语义就是<code>按位拷贝</code>，也就是我们通常所说的浅拷贝。</p>
+<p>下面我们来做一个对比：</p>
+<table><thead><tr><th>语义</th><th>何时生效</th><th>是否允许访问原变量</th></tr></thead><tbody>
+<tr><td>Move</td><td>对于任何类型，只要其没有实现Copy trait</td><td>是</td></tr>
+<tr><td>Copy</td><td>当切近当类型实现了Copy trait</td><td>否</td></tr>
+</tbody></table>
+<p>到此我们应该有一个大致的判断，一个类型实现了Copy trait，一般就意味着他不存在堆数据，但是他有一个super tarit <code>Clone</code>。</p>
+<h2 id="wei-shen-me-cloneshi-copyde-super-trait">为什么Clone是Copy的super trait</h2>
+<p>这个问题需要深入理解<code>Copy</code>和<code>Clone</code>存在意义才能解释清楚。</p>
+<blockquote>
+<p>Clone</p>
+</blockquote>
+<pre data-lang="rust" style="background-color:#2b303b;color:#6c7079;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#cd74e8;">pub trait </span><span style="color:#abb2bf;">Clone: Sized {
+</span><span style="color:#abb2bf;">    </span><span style="color:#cd74e8;">fn </span><span style="color:#5cb3fa;">clone</span><span style="color:#abb2bf;">(</span><span style="color:#adb7c9;">&amp;</span><span style="color:#eb6772;">self</span><span style="color:#abb2bf;">) -&gt; </span><span style="color:#cd74e8;">Self</span><span style="color:#abb2bf;">;
+</span><span style="color:#abb2bf;">
+</span><span style="color:#abb2bf;">    #[</span><span style="color:#eb6772;">inline</span><span style="color:#abb2bf;">]
+</span><span style="color:#abb2bf;">    </span><span style="color:#cd74e8;">fn </span><span style="color:#5cb3fa;">clone_from</span><span style="color:#abb2bf;">(</span><span style="color:#adb7c9;">&amp;</span><span style="color:#cd74e8;">mut </span><span style="color:#eb6772;">self</span><span style="color:#abb2bf;">, </span><span style="color:#eb6772;">source</span><span style="color:#abb2bf;">: </span><span style="color:#adb7c9;">&amp;</span><span style="color:#cd74e8;">Self</span><span style="color:#abb2bf;">) {
+</span><span style="color:#abb2bf;">        </span><span style="color:#adb7c9;">*</span><span style="color:#eb6772;">self </span><span style="color:#adb7c9;">=</span><span style="color:#abb2bf;"> source.</span><span style="color:#5ebfcc;">clone</span><span style="color:#abb2bf;">()
+</span><span style="color:#abb2bf;">    }
+</span><span style="color:#abb2bf;">}
+</span></code></pre>
+<ol>
+<li>Clone是一种<code>深拷贝</code>的统一接口，提供了<code>fn clone(&amp;self) -&gt; Self</code>和<code>fn clone_from(&amp;mut self, source: &amp;Self)</code>两个接口，用户只需实现clone即可</li>
+<li>clone的语义就是深拷贝，因此不仅需要处理栈中的数据，也需要处理堆中的数据，例如<code>Vec&lt;T&gt;</code>，<code>String</code>等等。</li>
+<li>cloen的实现有程序员进行，由程序员保证堆中数据被处理妥善</li>
+<li>当且仅当程序员显示调用clone或者clone_from时才会生效</li>
+</ol>
+<blockquote>
+<p>Copy</p>
+</blockquote>
+<pre data-lang="rust" style="background-color:#2b303b;color:#6c7079;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#5f697a;">/// Types whose values can be duplicated simply by copying bits.
+</span><span style="color:#cd74e8;">pub trait </span><span style="color:#abb2bf;">Copy: Clone { }
+</span></code></pre>
+<ol>
+<li>Copy只是一个marker trait，且无需程序员实现，官方文档解释的也很清楚，按位拷贝。</li>
+<li>Copy的内部实现有编译器决定，由编译器负责</li>
+<li>若想实现Copy，则类型的所有成员都要是Copy的</li>
+<li>当赋值，传参，返回值等情况发生时，自动调用</li>
+</ol>
+<blockquote>
+<p>解释</p>
+</blockquote>
+<p>看完了这两个trait都表示那些涵义其实答案很清楚了：</p>
+<ol>
+<li>Copy代表着浅拷贝，而实现了Copy的类型，一定能够实现clone方法，如果你使用派生的方式为结构体实现Clone trait，则其实本质是上<code>Clone == Copy</code>，除非你手动实现Clone，并自定义clone的逻辑。</li>
+<li>那么问题就来了，既然类型能够实现Copy，那我不现实Copy，只实现Clone可以么？当然可以，但是此时如果发生了赋值，传参，返回值等情况下，默认就是Move语义了</li>
+</ol>
+<p>总之就是一句话，Copy之所以要将Clone设置为super trait，其实就是给程序员一个保证，任何实现了Copy的类型，都会有clone的实现（无论是程序员手动实现还是由编译器派生）</p>
+<h2 id="wei-shen-me-shi-xian-liao-dropjiu-bu-neng-zai-shi-xian-copy">为什么实现了Drop就不能再实现Copy</h2>
+<pre data-lang="rust" style="background-color:#2b303b;color:#6c7079;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#cd74e8;">pub trait </span><span style="color:#abb2bf;">Drop {
+</span><span style="color:#abb2bf;">    </span><span style="color:#cd74e8;">fn </span><span style="color:#5cb3fa;">drop</span><span style="color:#abb2bf;">(</span><span style="color:#adb7c9;">&amp;</span><span style="color:#cd74e8;">mut </span><span style="color:#eb6772;">self</span><span style="color:#abb2bf;">);
+</span><span style="color:#abb2bf;">}
+</span></code></pre>
+<p>实现了Drop就意味着，类型需要释放资源，一般也意味着类型拥有堆中的数据。那么谁有权利决定何时释放内存呢？答案是，所有者。</p>
+<p>此时如果类型还实现了Copy会发生什么呢？</p>
+<p>当赋值，传参，返回值产生时，将不再执行Move语义，让原有变量失效，而是执行Copy语义，按位拷贝栈上的数据（往往包含指向堆区的指针）也就会造成多个所有者的局面。这不仅违反了Rust的单一所有者规则，也会导致<code>double free</code>的内存安全问题，因此Rust在设计之处就杜绝了同时实现Copy和Drop，或者说Move和Copy只能二选一。</p>
+<h1 id="jie-yong-gui-ze">借用规则</h1>
+<p>上面我们一直在将Rust的所有权规则，那么如果我们不想移动所有权有没有什么办法呢？</p>
+<p>当然，那就是<code>借用</code>，同样在《The book》上也有对于借用的几条规则：</p>
+<blockquote>
+<ol>
+<li>在任意给定时间，要么 只能有一个可变引用，要么 只能有多个不可变引用</li>
+<li>引用必须总是有效的</li>
+</ol>
+</blockquote>
+<p>在Rust中，引用就是借用，翻译为借用更突出<code>借</code>这个语义，本文不会纠结于翻译。而引用的本质就是指针，只不过rust赋予了他更强大的功能。</p>
+<h2 id="ke-bian-yin-yong-de-pai-ta-xing">可变引用的排他性</h2>
+<p>上面的第一条规则，其实很好理解，其实就是和<code>读写锁</code>一模一样的，也很好解释，避免产生数据竞争。如果可变引用和不可变引用没有任何限制，则会导致内存安全问题。</p>
+<blockquote>
+<p>举个例子，<code>Vec&lt;i32&gt;</code></p>
+</blockquote>
+<p>如果有不可变引用指向第一个元素。同时又允许可变引用对Vec进行修改，那么当扩容发生时，那么继续访问不可变引用所指向的内存地址将是非法的。因此Rust规定了，要么有一个可变引用，要多可以有多个不可变引用。</p>
+<h2 id="yin-yong-bi-xu-shi-you-xiao-de">引用必须是有效的</h2>
+<pre data-lang="rust" style="background-color:#2b303b;color:#6c7079;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#cd74e8;">fn </span><span style="color:#5cb3fa;">dangle</span><span style="color:#abb2bf;">() -&gt; </span><span style="color:#adb7c9;">&amp;</span><span style="color:#abb2bf;">String {
+</span><span style="color:#abb2bf;">    </span><span style="color:#cd74e8;">let</span><span style="color:#abb2bf;"> s </span><span style="color:#adb7c9;">= </span><span style="color:#abb2bf;">String::from(</span><span style="color:#9acc76;">&quot;hello&quot;</span><span style="color:#abb2bf;">);
+</span><span style="color:#abb2bf;">    </span><span style="color:#adb7c9;">&amp;</span><span style="color:#abb2bf;">s
+</span><span style="color:#abb2bf;">}
+</span></code></pre>
+<p>引用无法改变所有者何时释放内存，因此当<code>引用的值的所有者</code>离开作用域时，这个引用也就随之失效。因为本质上何时释放内存仍由所有者说了算。</p>
+<h1 id="comments">Comments</h1>
+<p><sup class="footnote-reference"><a href="#1">1</a></sup> 这里所说的立即失效，是说编译器不允许你后续再次使用s1这个变量，而不是指<code>s1</code>这个胖指针会立即从栈中被抹除。所以任何访问了已经被编译器标记为失效的变量的行为都是UB，这个问题我后续会在自引用结构同单独讲</p>
+<p><sup class="footnote-reference"><a href="#2">2</a></sup> 别名的存在，会让程序的静态分析变得复杂，我们需要跟踪每一个别名的生命周期才能最终确认这个变量何时才需要释放。</p>
+
+          </div>
+        </article>
+      </div>
+      
+      <div class="column is-2 is-hidden-mobile">
+        <aside class="menu" style="position: sticky; top: 48px">
+          <p class="heading has-text-weight-bold">Contents</p>
+          <ul class="menu-list">
+            
+            <li>
+              <a id="link-nei-cun-guan-li-de-jing-dian-fang-shi" class="toc is-size-7 is-active"
+                href="https://yagegeng.github.io/docs/rust-ownership/#nei-cun-guan-li-de-jing-dian-fang-shi">
+                内存管理的经典方式
+              </a>
+              
+              <ul>
+                
+                <li>
+                  <a id="link-chang-jian-de-nei-cun-guan-li-fang-shi" class="toc is-size-7" href="https://yagegeng.github.io/docs/rust-ownership/#chang-jian-de-nei-cun-guan-li-fang-shi">
+                    常见的内存管理方式
+                  </a>
+                </li>
+                
+                <li>
+                  <a id="link-rustde-nei-cun-guan-li-fang-shi" class="toc is-size-7" href="https://yagegeng.github.io/docs/rust-ownership/#rustde-nei-cun-guan-li-fang-shi">
+                    Rust的内存管理方式
+                  </a>
+                </li>
+                
+              </ul>
+              
+            </li>
+            
+            <li>
+              <a id="link-suo-you-quan-gui-ze" class="toc is-size-7 "
+                href="https://yagegeng.github.io/docs/rust-ownership/#suo-you-quan-gui-ze">
+                所有权规则
+              </a>
+              
+            </li>
+            
+            <li>
+              <a id="link-move-he-copy-yu-yi" class="toc is-size-7 "
+                href="https://yagegeng.github.io/docs/rust-ownership/#move-he-copy-yu-yi">
+                Move 和 Copy 语义
+              </a>
+              
+              <ul>
+                
+                <li>
+                  <a id="link-wei-shen-me-cloneshi-copyde-super-trait" class="toc is-size-7" href="https://yagegeng.github.io/docs/rust-ownership/#wei-shen-me-cloneshi-copyde-super-trait">
+                    为什么Clone是Copy的super trait
+                  </a>
+                </li>
+                
+                <li>
+                  <a id="link-wei-shen-me-shi-xian-liao-dropjiu-bu-neng-zai-shi-xian-copy" class="toc is-size-7" href="https://yagegeng.github.io/docs/rust-ownership/#wei-shen-me-shi-xian-liao-dropjiu-bu-neng-zai-shi-xian-copy">
+                    为什么实现了Drop就不能再实现Copy
+                  </a>
+                </li>
+                
+              </ul>
+              
+            </li>
+            
+            <li>
+              <a id="link-jie-yong-gui-ze" class="toc is-size-7 "
+                href="https://yagegeng.github.io/docs/rust-ownership/#jie-yong-gui-ze">
+                借用规则
+              </a>
+              
+              <ul>
+                
+                <li>
+                  <a id="link-ke-bian-yin-yong-de-pai-ta-xing" class="toc is-size-7" href="https://yagegeng.github.io/docs/rust-ownership/#ke-bian-yin-yong-de-pai-ta-xing">
+                    可变引用的排他性
+                  </a>
+                </li>
+                
+                <li>
+                  <a id="link-yin-yong-bi-xu-shi-you-xiao-de" class="toc is-size-7" href="https://yagegeng.github.io/docs/rust-ownership/#yin-yong-bi-xu-shi-you-xiao-de">
+                    引用必须是有效的
+                  </a>
+                </li>
+                
+              </ul>
+              
+            </li>
+            
+            <li>
+              <a id="link-comments" class="toc is-size-7 "
+                href="https://yagegeng.github.io/docs/rust-ownership/#comments">
+                Comments
+              </a>
+              
+            </li>
+            
+          </ul>
+        </aside>
+      </div>
+      
+    </div>
+  </div>
+</section>
+
+
+  
+  <section class="modal" id="search-modal">
+    <div class="modal-background"></div>
+    <div class="modal-card">
+      <header class="modal-card-head">
+        <p class="modal-card-title">Search</p>
+      </header>
+      <section class="modal-card-body">
+        <div class="field mb-2">
+          <div class="control">
+            <input class="input" id="search" placeholder="Search this website." type="search" />
+          </div>
+        </div>
+        <div class="search-results">
+          <div class="search-results__items"></div>
+        </div>
+      </section>
+    </div>
+    <button aria-label="close" class="modal-close is-large"></button>
+  </section>
+  
+
+
+  
+
+<section class="section">
+  <div class="container">
+    <div class="columns is-centered">
+      <div class="column is-8">
+        <nav class="level">
+              
+          <div class="level-item has-text-centered">
+            <a class="button is-black is-outlined" href="https:&#x2F;&#x2F;yagegeng.github.io&#x2F;docs&#x2F;hello-wrold&#x2F;">
+              <span class="icon mr-2">
+                <i class="fas fa-arrow-circle-left"></i>
+              </span>
+              Hello World
+            </a>
+          </div>
+           
+        </nav>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+
+  
+
+<section class="section">
+  <div class="container">
+    <div class="columns is-centered">
+      <div class="column is-6">
+        <div id="disqus_thread"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+
+  
+  <footer class="footer py-4">
+    <div class="content has-text-centered">
+      <p>
+        Built with
+        <span class="icon-text">
+          <span class="icon">
+            <i class="fas fa-code"></i>
+          </span>
+          <span>code</span>
+        </span>
+        and
+        <span class="icon-text">
+          <span class="icon">
+            <i class="fas fa-heart"></i>
+          </span>
+          <span>love</span>
+        </span>
+      </p>
+      <p>
+        Powered by
+        <span class="icon-text">
+          <span class="icon">
+            <i class="fas fa-power-off"></i>
+          </span>
+          <span>zola</span>
+        </span>
+      </p>
+    </div>
+  </footer>
+  
+
+  
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js" integrity="sha384-vtXRMe3mGCbOeY7l30aIg8H9p3GdeSe4IFlP6G8JMa7o7lXvnz3GFKzPxzJdPfGK" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/galleria@1.6.1/dist/galleria.min.js" integrity="sha384-QSfwGT8/EU536DKdtyP2D6SLlh8zBaZ0cVkwfrwhqzIU9VCfJT00CLVP5t+HAiYg" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/galleria@1.6.1/dist/themes/folio/galleria.folio.min.js" integrity="sha384-DwpKI+deZB267+hPKwiOIc5Y2GKsVL0mR6hgz7GgIu7AgAMYqJwcJKY1YBNfhWcY" crossorigin="anonymous"></script>
+  
+  
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@8.13.5/dist/mermaid.min.js" integrity="sha384-0yWn54pSGtfKCU+skfA69l25VsCw+MZt4LQov3xNRoS7YkAMrFokGgSBnAWSK4pv" crossorigin="anonymous"></script>
+  
+  
+  <script src="https://cdn.jsdelivr.net/npm/chart.xkcd@1.1.13/dist/chart.xkcd.min.js" integrity="sha384-xC3h1+IHXK8seA+8KfT79Z4e0GPsznjXBoMa5nd8ooWKplPyXx92NOmljWxLC/cs" crossorigin="anonymous"></script>
+  
+  
+  <script src="https://yagegeng.github.io/elasticlunr.min.js"></script>
+  <script src="https://yagegeng.github.io/search_index.en.js"></script><script src="https://yagegeng.github.io/js/site.js"></script>
+
+  
+
+<script type="text/javascript">
+  const menuBarHeight = document.querySelector("nav.navbar").clientHeight;
+  const tocItems = document.querySelectorAll(".toc");
+  const navSections = new Array(tocItems.length);
+
+  tocItems.forEach((el, i) => {
+    let id = el.getAttribute("id").substring(5);
+    navSections[i] = document.getElementById(id);
+  })
+
+  function isVisible(tocIndex) {
+    const current = navSections[tocIndex];
+    const next = tocIndex < tocItems.length - 1 ? navSections[tocIndex + 1]
+      : document.querySelectorAll("section.section").item(1);
+
+    const c = current.getBoundingClientRect();
+    const n = next.getBoundingClientRect();
+    const h = (window.innerHeight || document.documentElement.clientHeight);
+
+    return (c.top <= h) && (n.top - menuBarHeight >= 0);
+  }
+
+  function activateIfVisible() {
+    for (b = true, i = 0; i < tocItems.length; i++) {
+      if (b && isVisible(i)) {
+        tocItems[i].classList.add('is-active');
+        b = false;
+      } else
+        tocItems[i].classList.remove('is-active');
+    }
+  }
+
+  var isTicking = null;
+  window.addEventListener('scroll', () => {
+    if (!isTicking) {
+      window.requestAnimationFrame(() => {
+        activateIfVisible();
+        isTicking = false;
+      });
+      isTicking = true;
+    }
+  }, false);
+</script>
+
+
+
+<script>
+  var disqus_config = function () {
+    this.page.url = "https://yagegeng.github.io";
+    this.page.identifier = "/docs/rust-ownership/";
+  };
+
+  (function () {
+    var d = document, s = d.createElement('script');
+    s.src = 'https://deepthought-theme.disqus.com/embed.js';
+    s.setAttribute('data-timestamp', +new Date());
+    (d.head || d.body).appendChild(s);
+  })();
+</script>
+
+
+
+  
+  
+</body>
+
+</html>
